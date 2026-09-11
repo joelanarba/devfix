@@ -1,6 +1,6 @@
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef } from 'react'
 import AnalyzeButton from './AnalyzeButton'
-import { TerminalIcon, ResetIcon, ChevronDownIcon } from './Icons'
+import { TerminalIcon, ResetIcon, ChevronDownIcon, CheckIcon } from './Icons'
 
 const LANGUAGES = [
   { value: 'auto', label: 'Auto-detect runtime' },
@@ -37,36 +37,30 @@ export default function DiagnosticEditor({
   onReset,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const gutterRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     textareaRef.current?.focus()
   }, [])
 
-  // Calculate lines for line-number gutter
-  const lineCount = useMemo(() => {
-    if (!input) return 1
-    return input.split('\n').length
-  }, [input])
-
-  const lineNumbers = useMemo(() => {
-    return Array.from({ length: Math.max(lineCount, 12) }, (_, i) => i + 1)
-  }, [lineCount])
-
-  // Synchronize scrolling between textarea and gutter
-  const handleScroll = () => {
-    if (textareaRef.current && gutterRef.current) {
-      gutterRef.current.scrollTop = textareaRef.current.scrollTop
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Pressing Enter sends the text (Shift + Enter creates a newline)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      if (!loading && input.trim()) {
+        onAnalyze()
+      }
+      return
     }
-  }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Ctrl/Cmd + Enter also sends
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault()
       if (!loading && input.trim()) {
         onAnalyze()
       }
+      return
     }
+
     if (e.key === 'Escape' && !loading && input) {
       onReset()
     }
@@ -84,19 +78,15 @@ export default function DiagnosticEditor({
     }
   }
 
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.userAgent)
-  const shortcutKey = isMac ? '⌘' : 'Ctrl'
-
   return (
     <div className="editor-window" role="region" aria-label="Diagnostic Editor Console">
-      {/* Editor Titlebar / Tab Strip */}
+      {/* Editor Titlebar / Controls */}
       <div className="editor-titlebar">
         <div className="editor-tabs">
           <div className="editor-tab active-tab">
             <span className={`editor-tab-dot ${input ? 'dot-active' : ''}`} />
-            <TerminalIcon size={13} className="editor-tab-icon" />
-            <span className="editor-tab-title">stdin.err</span>
-            <span className="editor-tab-ext">raw</span>
+            <TerminalIcon size={14} className="editor-tab-icon" />
+            <span className="editor-tab-title">Error Input</span>
           </div>
         </div>
 
@@ -149,62 +139,44 @@ export default function DiagnosticEditor({
         </div>
       </div>
 
-      {/* Editor Body with Line-Number Gutter */}
+      {/* Editor Body - Undivided, Full-width */}
       <div className="editor-body">
-        <div className="editor-gutter" ref={gutterRef} aria-hidden="true">
-          {lineNumbers.map((num) => (
-            <div
-              key={num}
-              className={`gutter-line ${num <= lineCount && input ? 'gutter-active' : ''}`}
-            >
-              {num}
-            </div>
-          ))}
-        </div>
-
-        <div className="editor-input-wrapper">
-          <textarea
-            ref={textareaRef}
-            id="error-input"
-            className="editor-textarea"
-            placeholder={`// Paste your compiler diagnostic, stack trace, or broken code snippet here...\n// Press ${shortcutKey} + Enter to run analysis`}
-            value={input}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onScroll={handleScroll}
-            disabled={loading}
-            spellCheck={false}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            aria-label="Error or code input"
-          />
-        </div>
+        <textarea
+          ref={textareaRef}
+          id="error-input"
+          className="editor-textarea"
+          placeholder={"Paste your error message, stack trace, or problematic code snippet here...\n\nPress Enter to send (Shift + Enter for new line)"}
+          value={input}
+          onChange={(e) => onInputChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={loading}
+          spellCheck={false}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          aria-label="Error or code input"
+        />
       </div>
 
-      {/* Editor Statusbar & Trigger Footer */}
+      {/* Editor Statusbar & Send Footer */}
       <div className="editor-statusbar">
         <div className="editor-status-left">
           <span className="status-metric">
-            <span className="metric-label">LN:</span>
-            <span className="metric-val">{lineCount}</span>
+            <span className="metric-val">{input.length.toLocaleString()} / 10,000 chars</span>
           </span>
-          <span className="status-separator">|</span>
-          <span className="status-metric">
-            <span className="metric-label">COL:</span>
-            <span className="metric-val">{input.length > 0 ? (input.split('\n').pop()?.length ?? 0) : 0}</span>
-          </span>
-          <span className="status-separator">|</span>
-          <span className="status-metric">
-            <span className="metric-label">CHARS:</span>
-            <span className="metric-val">{input.length.toLocaleString()} / 10,000</span>
+          <span className="status-separator">•</span>
+          <span className="editor-shortcut-hint">
+            <kbd className="kbd-badge">Enter</kbd> to send, <kbd className="kbd-badge">Shift + Enter</kbd> for newline
           </span>
         </div>
 
         <div className="editor-status-right">
-          <span className="editor-shortcut-hint">
-            <kbd className="kbd-badge">{shortcutKey}</kbd> + <kbd className="kbd-badge">Enter</kbd>
-          </span>
+          {hasSuccess && !loading && (
+            <span className="diagnosis-ready-badge">
+              <CheckIcon size={13} />
+              <span>Diagnosis ready</span>
+            </span>
+          )}
 
           <AnalyzeButton
             loading={loading}

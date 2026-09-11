@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ArrowRightIcon, CheckIcon } from './Icons'
+import { SendIcon } from './Icons'
 
 interface Props {
   loading: boolean
@@ -9,13 +9,12 @@ interface Props {
 }
 
 const LOADING_STEPS = [
-  'Parsing error syntax...',
-  'Tracing failure frames...',
-  'Isolating root cause...',
-  'Synthesizing fix & patch...',
+  'Analyzing...',
+  'Tracing cause...',
+  'Generating fix...',
 ]
 
-export default function AnalyzeButton({ loading, disabled, onClick, hasSuccess }: Props) {
+export default function AnalyzeButton({ loading, disabled, onClick }: Props) {
   const [stepIndex, setStepIndex] = useState(0)
 
   useEffect(() => {
@@ -34,30 +33,22 @@ export default function AnalyzeButton({ loading, disabled, onClick, hasSuccess }
   return (
     <button
       type="button"
-      className={`analyze-btn ${loading ? 'analyze-btn-loading' : ''} ${hasSuccess ? 'analyze-btn-success' : ''}`}
+      className={`send-button ${loading ? 'send-button-loading' : ''}`}
       onClick={onClick}
       disabled={disabled || loading}
-      aria-label={loading ? LOADING_STEPS[stepIndex] : 'Analyze Error'}
+      aria-label={loading ? LOADING_STEPS[stepIndex] : 'Send'}
     >
-      <span className="analyze-btn-surface">
-        {loading ? (
-          <span className="analyze-btn-content">
-            <span className="analyze-spinner" aria-hidden="true" />
-            <span className="analyze-step-text">{LOADING_STEPS[stepIndex]}</span>
-          </span>
-        ) : hasSuccess ? (
-          <span className="analyze-btn-content">
-            <CheckIcon size={15} />
-            <span>Diagnosis Ready</span>
-          </span>
-        ) : (
-          <span className="analyze-btn-content">
-            <span className="analyze-btn-label">Analyze Error</span>
-            <ArrowRightIcon size={14} className="analyze-btn-arrow" />
-          </span>
-        )}
-      </span>
-      <span className="analyze-btn-glow" aria-hidden="true" />
+      {loading ? (
+        <>
+          <span className="send-spinner" aria-hidden="true" />
+          <span className="send-label">{LOADING_STEPS[stepIndex]}</span>
+        </>
+      ) : (
+        <>
+          <span className="send-label">Send</span>
+          <SendIcon size={15} className="send-icon" />
+        </>
+      )}
     </button>
   )
 }
