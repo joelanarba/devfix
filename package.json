@@ -1,0 +1,21 @@
+{
+  "name": "devfix",
+  "version": "1.0.0",
+  "description": "DevFix - Understand errors. Fix them faster.",
+  "scripts": {
+    "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
+    "deploy:bash": "bash ./scripts/deploy.sh",
+    "test": "python ./scripts/test_handler.py",
+    "smoke-test": "python ./scripts/smoke_test.py",
+    "build:frontend": "npm run build --prefix app/frontend"
+  },
+  "keywords": [
+    "developer-tools",
+    "debugging",
+    "bedrock",
+    "aws-lambda",
+    "react"
+  ],
+  "author": "",
+  "license": "MIT"
+}
