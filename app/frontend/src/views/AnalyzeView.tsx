@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import DiagnosticEditor from '../components/DiagnosticEditor'
 import DiagnosticReport from '../components/DiagnosticReport'
 import EmptyState from '../components/EmptyState'
@@ -61,14 +62,32 @@ const REALISTIC_EXAMPLES: ExampleError[] = [
 
 export default function AnalyzeView() {
   const { triggerToast, addToHistory } = useAppContext()
+  const location = useLocation()
+  const historyState = location.state as {
+    input?: string
+    language?: string
+    result?: AnalysisResult
+  } | null
 
-  const [input, setInput] = useState('')
-  const [language, setLanguage] = useState('auto')
-  const [state, setState] = useState<AppState>('idle')
-  const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [input, setInput] = useState(historyState?.input || '')
+  const [language, setLanguage] = useState(historyState?.language || 'auto')
+  const [state, setState] = useState<AppState>(historyState?.result ? 'success' : 'idle')
+  const [result, setResult] = useState<AnalysisResult | null>(historyState?.result || null)
   const [error, setError] = useState<string | null>(null)
 
   const workspaceRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (location.state && (location.state as any).input !== undefined) {
+      const s = location.state as { input: string; language?: string; result?: AnalysisResult }
+      setInput(s.input)
+      if (s.language) setLanguage(s.language)
+      if (s.result) {
+        setResult(s.result)
+        setState('success')
+      }
+    }
+  }, [location.state])
 
   const handleAnalyze = useCallback(async () => {
     const trimmed = input.trim()
